@@ -22,7 +22,10 @@ start-dep :
 			docker-compose -f ./docker-compose.yml up -d
 
 start-cust-svc : start-dep   ## customer sevrice
-				 ./gradlew customer-service:bootRun
+				 ./gradlew customer-service:bootRun  & echo $$! > cust-svc.PID
 
 stop : ## stop
 	 docker-compose -f ./docker-compose.yml down
+	 if [ -a cust-svc.PID ]; then \
+         kill -TERM $$(cat cust-svc.PID) || true; \
+     fi;
