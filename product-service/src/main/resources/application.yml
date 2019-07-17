@@ -1,0 +1,52 @@
+spring:
+  application:
+    name: product-service
+  zipkin:
+    base-url: http://${ZIPKIN_HOST:localhost}:${ZIPKIN_PORT:9411}
+  sleuth:
+    opentracing:
+      enabled: ${OPENTRACING_ENABLED:true}
+    traceId128: true
+    sampler:
+      probability: 1.0
+    propagation-keys:
+      - x-request-id
+      - x-ot-span-context
+  datasource:
+    url: jdbc:tracing:mysql://localhost:3306/customers?useSSL=false
+    username: customer
+    password: customer
+    driverClassName: io.opentracing.contrib.jdbc.TracingDriver
+  jpa:
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL5Dialect
+    hibernate:
+      ddl-auto: update
+
+server:
+  port: 8080
+
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: prometheus,metrics,info,health,beans,threaddump,httptrace
+    health:
+      show-details: always
+  metrics:
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+      percentiles:
+        http.server.requests: 0.95, 0.99
+      sla:
+        http.server.requests: 10ms, 20ms
+
+metrics:
+  export:
+    prometheus:
+      enabled: true
+  security:
+    enabled: false

@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+	<include resource="org/springframework/boot/logging/logback/defaults.xml" />
+
+	<property name="ROOT_LOG_LEVEL" value="${ROOT_LOG_LEVEL:-INFO}" />
+	<property name="SPRING_LOG_LEVEL" value="${LOGGING_LEVEL_SPRING:-INFO}" />
+	<property name="APP_LOG_LEVEL" value="${LOGGING_LEVEL_APP:-DEBUG}"/>
+
+	<appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+		<encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+			<providers>
+				<pattern>
+					<pattern>
+						{
+						"timestamp": "%d{yyyy-MM-dd HH:mm:ss.SSS}",
+						"severity": "%level",
+						"service": "${SPRING_APPLICATION_NAME:-product-discovery-api}",
+						"logger": "%-40.40logger{39}",
+						"trace": "%X{X-B3-TraceId:-}",
+						"span": "%X{X-B3-SpanId:-}",
+						"parent": "%X{X-B3-ParentSpanId:-}",
+						"exportable": "%X{X-Span-Export:-}",
+						"pid": "${PID:-}",
+						"thread": "%thread",
+						"message": "%message"
+						}
+					</pattern>
+				</pattern>
+				<stackTrace>
+					<throwableConverter class="net.logstash.logback.stacktrace.ShortenedThrowableConverter">
+						<maxDepthPerThrowable>10</maxDepthPerThrowable>
+						<maxLength>2048</maxLength>
+						<shortenedClassNameLength>40</shortenedClassNameLength>
+						<exclude>^sun\.reflect\..*\.invoke</exclude>
+						<exclude>^net\.sf\.cglib\.proxy\.MethodProxy\.invoke</exclude>
+						<rootCauseFirst>true</rootCauseFirst>
+					</throwableConverter>
+				</stackTrace>
+			</providers>
+		</encoder>
+	</appender>
+
+	<root level="${ROOT_LOG_LEVEL}">
+		<appender-ref ref="CONSOLE" />
+	</root>
+	<logger name="com.publicis"  additivity="false" level="${APP_LOG_LEVEL}">
+		<appender-ref ref="CONSOLE" />
+	</logger>
+
+	<logger name="org.apache.http.wire"  additivity="false" level="${APACHE_HTTP_WIRE_LOG_LEVEL}">
+		<appender-ref ref="CONSOLE" />
+	</logger>
+
+</configuration>

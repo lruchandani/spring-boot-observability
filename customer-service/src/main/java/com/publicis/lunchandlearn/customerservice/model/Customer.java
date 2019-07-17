@@ -13,6 +13,7 @@ import javax.persistence.Id;
 @Entity
 @Data
 public class Customer {
+
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Integer id;
