@@ -12,6 +12,7 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.cloud.sleuth.annotation.NewSpan;
 import org.springframework.cloud.sleuth.annotation.SpanTag;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -42,7 +43,7 @@ public class CustomerController implements ApplicationRunner {
 
   @PostMapping
   @NewSpan("add-customer-web")
-  public Customer add(@RequestBody @SpanTag(value = "customer-name",expression = "#{customer.name}") Customer customer) {
+  public Customer add(@RequestBody @SpanTag(value = "customer-name",expression = "Name") Customer customer) {
     Customer addedCustomer =  repository.save(customer);
     log.info("Customer added - id : {}, name : {}", addedCustomer.getId(), addedCustomer.getName());
     return addedCustomer;
@@ -53,7 +54,7 @@ public class CustomerController implements ApplicationRunner {
     return repository.save(customer);
   }
 
-  @GetMapping("/{id}")
+  @GetMapping(value = "/{id}",produces = MediaType.APPLICATION_JSON_VALUE , consumes = MediaType.APPLICATION_JSON_VALUE)
   @NewSpan("get-customer-web")
   public Customer findById(@PathVariable("id") @SpanTag("customer-id") Integer id) {
     log.info("Get Customer : {} ",id);

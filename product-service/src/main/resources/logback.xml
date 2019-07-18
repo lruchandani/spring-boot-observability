@@ -14,7 +14,7 @@
 						{
 						"timestamp": "%d{yyyy-MM-dd HH:mm:ss.SSS}",
 						"severity": "%level",
-						"service": "${SPRING_APPLICATION_NAME:-product-discovery-api}",
+						"service": "${SPRING_APPLICATION_NAME:-product-service}",
 						"logger": "%-40.40logger{39}",
 						"trace": "%X{X-B3-TraceId:-}",
 						"span": "%X{X-B3-SpanId:-}",

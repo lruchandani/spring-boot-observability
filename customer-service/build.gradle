@@ -55,7 +55,7 @@ dependencyManagement {
 }
 
 bootRun {
-	if (project.hasProperty('args')) {
-		args project.args.split(',')
+	if (project.hasProperty('load')) {
+		args "--load"
 	}
 }

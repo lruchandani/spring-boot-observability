@@ -40,9 +40,9 @@ management:
       percentiles-histogram:
         http.server.requests: true
       percentiles:
-        http.server.requests: 0.95, 0.99
+        http.server.requests: 0.75,0.95, 0.99
       sla:
-        http.server.requests: 10ms, 20ms
+        http.server.requests: 50ms,100ms,300ms,500ms,1s
 
 metrics:
   export:

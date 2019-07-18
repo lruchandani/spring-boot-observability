@@ -13,9 +13,9 @@ spring:
       - x-request-id
       - x-ot-span-context
   datasource:
-    url: jdbc:tracing:mysql://localhost:3306/customers?useSSL=false
-    username: customer
-    password: customer
+    url: jdbc:tracing:mysql://localhost:3308/products?useSSL=false
+    username: product
+    password: product
     driverClassName: io.opentracing.contrib.jdbc.TracingDriver
   jpa:
     properties:
@@ -25,7 +25,7 @@ spring:
       ddl-auto: update
 
 server:
-  port: 8080
+  port: 8082
 
 
 management:

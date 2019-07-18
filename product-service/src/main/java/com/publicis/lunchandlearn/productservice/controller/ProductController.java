@@ -41,7 +41,7 @@ public class ProductController implements ApplicationRunner {
   @PostMapping
   @NewSpan("add-product-web")
   public Product add(@RequestBody
-      @SpanTag(value = "product-name",expression = "#{product.name}")  Product product) {
+      @SpanTag(value = "product-name",expression = "#{product.productName}")  Product product) {
     Product addedProduct =  repository.save(product);
     log.info("Customer added - id : {}, name : {}", addedProduct.getProductId(), addedProduct.getProductName());
     return addedProduct;
@@ -66,7 +66,7 @@ public class ProductController implements ApplicationRunner {
       Map.of("Airbus A380",10, "Dreamliner 737",20, "Airbus A320", 30)
           .forEach((productName,quantity)-> {
             ResponseEntity<Product> responseEntity = restTemplate
-                .postForEntity("http://localhost:8081/products", new Product(productName,quantity), Product.class);
+                .postForEntity("http://localhost:8082/products", new Product(productName,quantity), Product.class);
             if (responseEntity.getStatusCode() != HttpStatus.OK) {
               log.error("Error Occurred:", responseEntity.getStatusCode().value());
             }
