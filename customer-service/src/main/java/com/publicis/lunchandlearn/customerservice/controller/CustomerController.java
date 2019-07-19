@@ -1,6 +1,7 @@
 package com.publicis.lunchandlearn.customerservice.controller;
 
 import antlr.collections.impl.IntRange;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.stream.IntStream;
@@ -12,6 +13,7 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.cloud.sleuth.annotation.NewSpan;
 import org.springframework.cloud.sleuth.annotation.SpanTag;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -42,18 +44,26 @@ public class CustomerController implements ApplicationRunner {
 
   @PostMapping
   @NewSpan("add-customer-web")
-  public Customer add(@RequestBody @SpanTag(value = "customer-name",expression = "#{customer.name}") Customer customer) {
+  public Customer add(@RequestBody @SpanTag(value = "customer-name",expression = "Name") Customer customer) {
     Customer addedCustomer =  repository.save(customer);
     log.info("Customer added - id : {}, name : {}", addedCustomer.getId(), addedCustomer.getName());
     return addedCustomer;
   }
 
-  @PutMapping
-  public Customer update(@RequestBody Customer customer) {
-    return repository.save(customer);
+  @PutMapping(value = "/{id}", produces = MediaType.APPLICATION_JSON_VALUE , consumes = MediaType.APPLICATION_JSON_VALUE)
+  @NewSpan("update-customer-funds")
+  public Customer update(@PathVariable("id") @SpanTag("customerId") Integer customerId,
+      @RequestBody  UpdateCustomerCommand updateCustomerCommand) {
+     Customer customer = repository.findById(customerId).orElseThrow(RuntimeException::new);
+     if(customer.getAvailableFunds()-updateCustomerCommand.getFunds()<0){
+       throw new RuntimeException("Wallet Empty");
+     }
+     customer.setAvailableFunds(customer.getAvailableFunds()-updateCustomerCommand.getFunds());
+     repository.save(customer);
+     return customer;
   }
 
-  @GetMapping("/{id}")
+  @GetMapping(value = "/{id}",produces = MediaType.APPLICATION_JSON_VALUE , consumes = MediaType.APPLICATION_JSON_VALUE)
   @NewSpan("get-customer-web")
   public Customer findById(@PathVariable("id") @SpanTag("customer-id") Integer id) {
     log.info("Get Customer : {} ",id);
@@ -75,5 +85,10 @@ public class CustomerController implements ApplicationRunner {
           });
     }
 
+  }
+
+  @Data
+  static class UpdateCustomerCommand {
+    int funds;
   }
 }

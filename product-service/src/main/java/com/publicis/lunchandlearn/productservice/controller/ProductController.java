@@ -22,6 +22,9 @@ import com.publicis.lunchandlearn.productservice.model.Product;
 import com.publicis.lunchandlearn.productservice.repository.ProductRepository;
 import com.thedeanda.lorem.Lorem;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @RestController
@@ -41,21 +44,27 @@ public class ProductController implements ApplicationRunner {
   @PostMapping
   @NewSpan("add-product-web")
   public Product add(@RequestBody
-      @SpanTag(value = "product-name",expression = "#{product.name}")  Product product) {
+      @SpanTag(value = "product-name",expression = "#{product.productName}")  Product product) {
     Product addedProduct =  repository.save(product);
-    log.info("Customer added - id : {}, name : {}", addedProduct.getProductId(), addedProduct.getProductName());
+    log.info("Product added - id : {}, name : {}", addedProduct.getProductId(), addedProduct.getProductName());
     return addedProduct;
   }
 
-  @PutMapping
-  public Product update(@RequestBody Product product) {
+  @PutMapping("/{id}")
+  public Product update(@PathVariable("id") @SpanTag("productId") Integer id,
+      @RequestBody UpdateProductCommand productCommand) {
+    Product product = repository.findById(id).orElseThrow(()->new RuntimeException("Product Not found"));
+    if(product.getQuantity()-productCommand.getQuanity()<0){
+      throw new RuntimeException("Product Out of Stock");
+    }
+    product.setQuantity(product.getQuantity()-productCommand.getQuanity());
     return repository.save(product);
   }
 
   @GetMapping("/{id}")
   @NewSpan("get-product-web")
   public Product findById(@PathVariable("id") @SpanTag("product-id") Integer id) {
-    log.info("Get Customer : {} ",id);
+    log.info("Get Product : {} ",id);
     return repository.findById(id).get();
   }
 
@@ -66,12 +75,19 @@ public class ProductController implements ApplicationRunner {
       Map.of("Airbus A380",10, "Dreamliner 737",20, "Airbus A320", 30)
           .forEach((productName,quantity)-> {
             ResponseEntity<Product> responseEntity = restTemplate
-                .postForEntity("http://localhost:8081/products", new Product(productName,quantity), Product.class);
+                .postForEntity("http://localhost:8082/products", new Product(productName,quantity), Product.class);
             if (responseEntity.getStatusCode() != HttpStatus.OK) {
               log.error("Error Occurred:", responseEntity.getStatusCode().value());
             }
           });
     }
 
+  }
+
+  @Data
+  @NoArgsConstructor
+  @AllArgsConstructor
+  static class UpdateProductCommand {
+    int quanity;
   }
 }

@@ -1,15 +1,12 @@
 package com.publicis.lunchandlearn.orderservice.controller;
 
-import lombok.extern.slf4j.Slf4j;
-
-import java.util.Map;
-
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.ApplicationArguments;
-import org.springframework.boot.ApplicationRunner;
 import org.springframework.cloud.sleuth.annotation.NewSpan;
 import org.springframework.cloud.sleuth.annotation.SpanTag;
-import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -20,9 +17,19 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 
-import com.publicis.lunchandlearn.orderservice.model.Order;
+import com.publicis.lunchandlearn.orderservice.model.Customer;
+import com.publicis.lunchandlearn.orderservice.model.Orders;
+import com.publicis.lunchandlearn.orderservice.model.Product;
 import com.publicis.lunchandlearn.orderservice.repository.OrderRepository;
 import com.thedeanda.lorem.Lorem;
+
+import brave.Span;
+import brave.Tracer;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @RestController
 @RequestMapping("orders")
@@ -38,26 +45,58 @@ public class OrderController  {
   @Autowired
   Lorem lorem;
 
+  @Autowired
+  Tracer tracer;
+
   @PostMapping
-  @NewSpan("add-product-web")
-  public Order add(@RequestBody
-  @SpanTag(value = "product-name",expression = "#{product.name}")  Order order) {
-    Order addedOrder =  repository.save(order);
-    log.info("Customer added - id : {}, name : {}", addedOrder.getOrderId(), addedOrder.getProductId());
+  @NewSpan("add-order-web")
+  public Orders add(@RequestBody Orders order) {
+    Span span = tracer.currentSpan();
+    span.tag("customerId",order.getCustomerId().toString());
+    span.tag("productId",order.getProductId().toString());
+    span.tag("quantity",order.getQuantity().toString());
+    span.tag("cost",order.getTotalCost().toString());
+    span.start();
+    HttpHeaders headers = new HttpHeaders();
+    headers.setContentType(MediaType.APPLICATION_JSON);
+    //update the available product availability
+    HttpEntity<UpdateProductCommand> updateProductCommand = new HttpEntity<>(new UpdateProductCommand(order.getQuantity()),headers);
+    restTemplate.exchange("http://localhost:8082/products/{id}", HttpMethod.PUT,updateProductCommand,
+        Product.class,order.getProductId());
+    //call customer
+
+    HttpEntity<UpdateCustomerCommand> updateCustomerCommandHttpEntity = new HttpEntity<>(new UpdateCustomerCommand(order.getTotalCost().intValue()),headers);
+    restTemplate.exchange("http://localhost:8080/customers/{id}", HttpMethod.PUT,updateCustomerCommandHttpEntity,Customer.class,order.getCustomerId());
+    Orders addedOrder =  repository.save(order);
+
+    span.finish();
+    log.info("Order added - id : {}, Product Id : {}", addedOrder.getId(), addedOrder.getProductId());
     return addedOrder;
   }
 
   @PutMapping
-  public Order update(@RequestBody Order product) {
+  public Orders update(@RequestBody Orders product) {
     return repository.save(product);
   }
 
   @GetMapping("/{id}")
-  @NewSpan("get-product-web")
-  public Order findById(@PathVariable("id")
-                        @SpanTag("product-id") Integer id) {
+  @NewSpan("get-order-web")
+  public Orders findById(@PathVariable("id") @SpanTag("Order-id") Integer id) {
     log.info("Get Customer : {} ",id);
     return repository.findById(id).get();
   }
 
+  @Data
+  @NoArgsConstructor
+  @AllArgsConstructor
+  static class UpdateCustomerCommand {
+    int funds;
+  }
+
+  @Data
+  @NoArgsConstructor
+  @AllArgsConstructor
+  static class UpdateProductCommand {
+    int quantity;
+  }
 }

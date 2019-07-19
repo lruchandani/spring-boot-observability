@@ -13,7 +13,7 @@ spring:
       - x-request-id
       - x-ot-span-context
   datasource:
-    url: jdbc:tracing:mysql://localhost:3306/orders?useSSL=false
+    url: jdbc:tracing:mysql://localhost:3307/orders?useSSL=false
     username: order
     password: order
     driverClassName: io.opentracing.contrib.jdbc.TracingDriver
@@ -23,10 +23,10 @@ spring:
         dialect: org.hibernate.dialect.MySQL5Dialect
     hibernate:
       ddl-auto: update
+      show-swl: true
 
 server:
-  port: 8080
-
+  port: 8081
 
 management:
   endpoints:

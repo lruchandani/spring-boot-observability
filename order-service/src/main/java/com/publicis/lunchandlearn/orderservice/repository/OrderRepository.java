@@ -6,27 +6,27 @@ import org.springframework.cloud.sleuth.annotation.NewSpan;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
 
-import com.publicis.lunchandlearn.orderservice.model.Order;
+import com.publicis.lunchandlearn.orderservice.model.Orders;
 
 @Repository
-public interface OrderRepository extends CrudRepository<Order, Integer> {
+public interface OrderRepository extends CrudRepository<Orders, Integer> {
 
   @Override
   @NewSpan("add-order-repo")
-  <S extends Order> S save(S entity);
+  <S extends Orders> S save(S entity);
 
   @Override
-  <S extends Order> Iterable<S> saveAll(Iterable<S> entities);
+  <S extends Orders> Iterable<S> saveAll(Iterable<S> entities);
 
   @Override
   @NewSpan("get-order-repo")
-  Optional<Order> findById(Integer integer);
+  Optional<Orders> findById(Integer integer);
 
   @Override
-  Iterable<Order> findAll();
+  Iterable<Orders> findAll();
 
   @Override
-  Iterable<Order> findAllById(Iterable<Integer> integers);
+  Iterable<Orders> findAllById(Iterable<Integer> integers);
 
   @Override
   long count();
