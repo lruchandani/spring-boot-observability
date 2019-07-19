@@ -1,6 +1,7 @@
 package com.publicis.lunchandlearn.customerservice.controller;
 
 import antlr.collections.impl.IntRange;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.stream.IntStream;
@@ -49,9 +50,17 @@ public class CustomerController implements ApplicationRunner {
     return addedCustomer;
   }
 
-  @PutMapping
-  public Customer update(@RequestBody Customer customer) {
-    return repository.save(customer);
+  @PutMapping(value = "/{id}", produces = MediaType.APPLICATION_JSON_VALUE , consumes = MediaType.APPLICATION_JSON_VALUE)
+  @NewSpan("update-customer-funds")
+  public Customer update(@PathVariable("id") @SpanTag("customerId") Integer customerId,
+      @RequestBody  UpdateCustomerCommand updateCustomerCommand) {
+     Customer customer = repository.findById(customerId).orElseThrow(RuntimeException::new);
+     if(customer.getAvailableFunds()-updateCustomerCommand.getFunds()<0){
+       throw new RuntimeException("Wallet Empty");
+     }
+     customer.setAvailableFunds(customer.getAvailableFunds()-updateCustomerCommand.getFunds());
+     repository.save(customer);
+     return customer;
   }
 
   @GetMapping(value = "/{id}",produces = MediaType.APPLICATION_JSON_VALUE , consumes = MediaType.APPLICATION_JSON_VALUE)
@@ -76,5 +85,10 @@ public class CustomerController implements ApplicationRunner {
           });
     }
 
+  }
+
+  @Data
+  static class UpdateCustomerCommand {
+    int funds;
   }
 }

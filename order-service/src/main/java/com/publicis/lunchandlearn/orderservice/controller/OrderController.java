@@ -19,12 +19,16 @@ import org.springframework.web.client.RestTemplate;
 
 import com.publicis.lunchandlearn.orderservice.model.Customer;
 import com.publicis.lunchandlearn.orderservice.model.Orders;
+import com.publicis.lunchandlearn.orderservice.model.Product;
 import com.publicis.lunchandlearn.orderservice.repository.OrderRepository;
 import com.thedeanda.lorem.Lorem;
 
 import brave.Span;
 import brave.Tracer;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @RestController
@@ -53,10 +57,16 @@ public class OrderController  {
     span.tag("quantity",order.getQuantity().toString());
     span.tag("cost",order.getTotalCost().toString());
     span.start();
-    //call customer
     HttpHeaders headers = new HttpHeaders();
     headers.setContentType(MediaType.APPLICATION_JSON);
-    ResponseEntity<Customer> customer  = restTemplate.exchange("http://localhost:8080/customers/{id}", HttpMethod.GET,new HttpEntity<>(headers),Customer.class,order.getCustomerId());
+    //update the available product availability
+    HttpEntity<UpdateProductCommand> updateProductCommand = new HttpEntity<>(new UpdateProductCommand(order.getQuantity()),headers);
+    restTemplate.exchange("http://localhost:8082/products/{id}", HttpMethod.PUT,updateProductCommand,
+        Product.class,order.getProductId());
+    //call customer
+
+    HttpEntity<UpdateCustomerCommand> updateCustomerCommandHttpEntity = new HttpEntity<>(new UpdateCustomerCommand(order.getTotalCost().intValue()),headers);
+    restTemplate.exchange("http://localhost:8080/customers/{id}", HttpMethod.PUT,updateCustomerCommandHttpEntity,Customer.class,order.getCustomerId());
     Orders addedOrder =  repository.save(order);
 
     span.finish();
@@ -71,10 +81,22 @@ public class OrderController  {
 
   @GetMapping("/{id}")
   @NewSpan("get-order-web")
-  public Orders findById(@PathVariable("id")
-                        @SpanTag("Order-id") Integer id) {
+  public Orders findById(@PathVariable("id") @SpanTag("Order-id") Integer id) {
     log.info("Get Customer : {} ",id);
     return repository.findById(id).get();
   }
 
+  @Data
+  @NoArgsConstructor
+  @AllArgsConstructor
+  static class UpdateCustomerCommand {
+    int funds;
+  }
+
+  @Data
+  @NoArgsConstructor
+  @AllArgsConstructor
+  static class UpdateProductCommand {
+    int quantity;
+  }
 }

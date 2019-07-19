@@ -22,6 +22,9 @@ import com.publicis.lunchandlearn.productservice.model.Product;
 import com.publicis.lunchandlearn.productservice.repository.ProductRepository;
 import com.thedeanda.lorem.Lorem;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @RestController
@@ -43,19 +46,25 @@ public class ProductController implements ApplicationRunner {
   public Product add(@RequestBody
       @SpanTag(value = "product-name",expression = "#{product.productName}")  Product product) {
     Product addedProduct =  repository.save(product);
-    log.info("Customer added - id : {}, name : {}", addedProduct.getProductId(), addedProduct.getProductName());
+    log.info("Product added - id : {}, name : {}", addedProduct.getProductId(), addedProduct.getProductName());
     return addedProduct;
   }
 
-  @PutMapping
-  public Product update(@RequestBody Product product) {
+  @PutMapping("/{id}")
+  public Product update(@PathVariable("id") @SpanTag("productId") Integer id,
+      @RequestBody UpdateProductCommand productCommand) {
+    Product product = repository.findById(id).orElseThrow(()->new RuntimeException("Product Not found"));
+    if(product.getQuantity()-productCommand.getQuanity()<0){
+      throw new RuntimeException("Product Out of Stock");
+    }
+    product.setQuantity(product.getQuantity()-productCommand.getQuanity());
     return repository.save(product);
   }
 
   @GetMapping("/{id}")
   @NewSpan("get-product-web")
   public Product findById(@PathVariable("id") @SpanTag("product-id") Integer id) {
-    log.info("Get Customer : {} ",id);
+    log.info("Get Product : {} ",id);
     return repository.findById(id).get();
   }
 
@@ -73,5 +82,12 @@ public class ProductController implements ApplicationRunner {
           });
     }
 
+  }
+
+  @Data
+  @NoArgsConstructor
+  @AllArgsConstructor
+  static class UpdateProductCommand {
+    int quanity;
   }
 }
